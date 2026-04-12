@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🛡️ Admin Panel</div>
+        <div class="nav-user">
+            <a href="index.html" style="color: white; text-decoration: none; margin-right: 20px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; font-weight: 600;">
+                🏠 View Homepage
+            </a>
+            <span id="admin-name">Admin</span>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+            <div class="nav-user">
+    
+    <button id="switch-account-btn" class="btn-logout" style="background: rgba(255,255,255,0.15); margin-right: 10px;">Switch Account</button>
+    
+</div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3>Pending Review</h3>
+                <p class="stat-number" id="pending-count">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Approved Today</h3>
+                <p class="stat-number" id="approved-count">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Rejected Today</h3>
+                <p class="stat-number" id="rejected-count">0</p>
+            </div>
+        </div>
+        
+        <h1>Pending Posts</h1>
+        <div id="pending-posts">
+            <div class="loading"></div>
+        </div>
+    </div>
+    
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>

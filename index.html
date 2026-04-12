@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">🌟 Community Platform</div>
+        <div class="nav-user" id="nav-user">
+            <button id="google-login-btn" class="btn-google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Sign in with Google
+            </button>
+            
+            <div id="user-info" style="display: none;">
+                <img id="user-photo" class="user-photo" alt="User">
+                <span id="user-name-nav"></span>
+                <button id="logout-btn-nav" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <!-- Hero Section -->
+        <header class="hero">
+            <h1>Welcome to Our Community</h1>
+            <p>Share and discover content from your district</p>
+            <button id="hero-login-btn" class="btn-hero">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Get Started with Google
+            </button>
+        </header>
+        
+        <!-- District Filter -->
+        <div class="filter-section">
+            <h2>Browse by District</h2>
+            <div id="district-filter">
+                <button class="filter-btn active" data-district="all">All Districts</button>
+                <button class="filter-btn" data-district="North District">North</button>
+                <button class="filter-btn" data-district="South District">South</button>
+                <button class="filter-btn" data-district="East District">East</button>
+                <button class="filter-btn" data-district="West District">West</button>
+            </div>
+        </div>
+        
+        <!-- Posts Grid -->
+        <div id="posts-grid">
+            <div class="loading"></div>
+        </div>
+    </div>
+    
+    <!-- District Modal -->
+    <div id="district-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Welcome! Select Your District</h2>
+            <p>This helps us show you relevant local content</p>
+            <select id="district-select" class="district-select">
+                <option value="">Choose your district...</option>
+                <option value="North District">North District</option>
+                <option value="South District">South District</option>
+                <option value="East District">East District</option>
+                <option value="West District">West District</option>
+            </select>
+            <button id="save-district-btn" class="btn-primary">Continue</button>
+        </div>
+    </div>
+    
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>

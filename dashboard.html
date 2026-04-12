@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">🌟 My Dashboard</div>
+
+        <div class="nav-user" id="user-info">
+            <img id="user-photo" class="user-photo" alt="User">
+            <span id="user-name-nav"></span>
+
+            <button id="switch-account-btn" class="btn-secondary">
+                Switch Account
+            </button>
+
+            <button id="logout-btn-nav" class="btn-logout">Logout</button>
+
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>📤 Share Something</h1>
+
+        <div class="upload-box">
+            <form id="upload-form">
+
+                <label>What do you want to share?</label>
+                <select id="content-type" required>
+                    <option value="">Choose type...</option>
+                    <option value="text">📝 Text Post</option>
+                    <option value="image">📷 Image/Photo</option>
+                    <option value="video">🎥 Video</option>
+                </select>
+
+                <label>Your message:</label>
+                <textarea 
+                    id="text-content"
+                    placeholder="Share something with your community..."
+                    rows="5"
+                    required
+                ></textarea>
+
+                <div id="file-upload-section" style="display:none;">
+                    <label>Choose file:</label>
+                    <input type="file" id="file-input" accept="">
+                    <div id="file-preview"></div>
+
+                    <div id="upload-progress" style="display:none;">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progress-bar"></div>
+                        </div>
+                        <p id="progress-text">Uploading... 0%</p>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    📤 Submit for Review
+                </button>
+
+                <p class="info-text">
+                    ℹ️ Your post will be reviewed by admin before publishing
+                </p>
+            </form>
+        </div>
+
+        <h2>📝 My Posts</h2>
+        <div id="my-posts-container">
+            <div class="loading"></div>
+        </div>
+    </div>
+
+    <!-- IMPORTANT: Load auth FIRST -->
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/upload.js"></script>
+
+
+</body>
+</html>
