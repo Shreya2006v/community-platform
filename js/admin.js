@@ -1,315 +1,135 @@
-import { supabase } from './supabase-config.js'
+import { supabase, signOut, getProfile, getPosts, updatePostStatus } from './supabase-client.js'
 
-let currentUser = null
-let userData = null
+let currentStatus = 'pending'
 
-console.log('🛡️ Admin.js loaded')
+document.addEventListener('DOMContentLoaded', async () => {
+    // Use getSession() directly — reliable since all OAuth flows go through index.html first.
+    // onAuthStateChange was causing redirect loops due to Supabase storage lock conflicts.
+    const { data: { session } } = await supabase.auth.getSession()
 
-// ========================================
-// CHECK ADMIN ACCESS
-// ========================================
-
-async function initAdmin() {
-    console.log('🔍 Checking admin access...')
-
-    // Get current session
-    const { data: { session }, error } = await supabase.auth.getSession()
-
-    if (error || !session || !session.user) {
-        console.log('❌ No session, redirecting to login')
-        alert('❌ Please login first')
+    if (!session) {
         window.location.href = 'index.html'
         return
     }
 
-    currentUser = session.user
-    console.log('✅ Session found:', currentUser.email)
+    const { data: profile, error: profileError } = await getProfile(session.user.id)
 
-    // Get user data from database
-    const { data, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('uid', currentUser.id)
-    .single()
-
-
-    if (userError || !data) {
-        console.log('❌ User not found in database')
-        alert('❌ User profile not found')
+    if (profileError || !profile) {
+        console.error('[ADMIN] Could not load profile:', profileError)
         window.location.href = 'index.html'
         return
     }
 
-    userData = data
-    console.log('👤 User loaded:', userData.name, 'Role:', userData.role)
-
-    // Check if user is admin
-    if (userData.role !== 'admin') {
-        console.log('❌ Access denied - not admin')
-        alert('❌ Access Denied! Admin only.')
-        window.location.href = 'index.html'
+    if (profile.role !== 'admin') {
+        window.location.href = 'dashboard.html'
         return
     }
 
-    console.log('✅ Admin access confirmed!')
+    // Setup navbar
+    document.getElementById('nav-username').textContent = profile.name + ' (Admin)'
+    if (profile.avatar_url) {
+        document.getElementById('nav-avatar').innerHTML =
+            `<img src="${profile.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+    }
 
-    // Update UI
-    const adminName = document.getElementById('admin-name')
-    if (adminName) adminName.textContent = userData.name
-
-    // Load data
-    loadPendingPosts()
-    loadStats()
-}
-
-// Run on page load
-initAdmin()
-
-// ========================================
-// LOGOUT
-// ========================================
-
-const logoutBtn = document.getElementById('logout-btn')
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        console.log('🚪 Logging out...')
-        await supabase.auth.signOut()
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        await signOut()
         window.location.href = 'index.html'
     })
-}
 
-// ========================================
-// LOAD PENDING POSTS
-// ========================================
-
-async function loadPendingPosts() {
-    const container = document.getElementById('pending-posts')
-    if (!container) {
-        console.log('⚠️ Pending posts container not found')
-        return
-    }
-
-    container.innerHTML = '<div class="loading"></div>'
-    console.log('📥 Loading pending posts...')
-
-    try {
-        const { data: posts, error } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-
-        if (error) {
-            console.error('❌ Error loading posts:', error)
-            throw error
-        }
-
-        console.log('✅ Found', posts?.length || 0, 'pending posts')
-
-        if (!posts || posts.length === 0) {
-            container.innerHTML = '<p style="text-align: center; color: #999; padding: 60px; font-size: 1.2em;">✅ No pending posts! All caught up.</p>'
-            return
-        }
-
-        container.innerHTML = ''
-
-        posts.forEach(post => {
-            const postCard = createAdminPostCard(post)
-            container.appendChild(postCard)
+    document.querySelectorAll('.filter-admin').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-admin').forEach(b => b.classList.remove('active'))
+            e.currentTarget.classList.add('active')
+            currentStatus = e.currentTarget.dataset.status
+            loadAdminPosts()
         })
+    })
 
-    } catch (error) {
-        console.error('❌ Error loading posts:', error)
-        container.innerHTML = '<p style="text-align: center; color: red; padding: 40px;">Error loading posts. Please refresh.</p>'
+    loadAdminPosts()
+})
+
+window.changePostStatus = async (postId, newStatus) => {
+    const { error } = await updatePostStatus(postId, newStatus)
+    if (error) {
+        alert('Failed to update: ' + error.message)
+    } else {
+        loadAdminPosts()
     }
 }
 
-// ========================================
-// CREATE ADMIN POST CARD
-// ========================================
+async function loadAdminPosts() {
+    const tableBody = document.getElementById('admin-table-body')
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem"><span class="spinner"></span></td></tr>`
 
-function createAdminPostCard(post) {
-    const div = document.createElement('div')
-    div.className = 'admin-post-card'
+    const { data: posts, error } = await getPosts('all')
 
-    let mediaHTML = ''
-    if (post.file_url) {
-        if (post.content_type === 'image') {
-            mediaHTML = `<img src="${post.file_url}" style="max-width: 100%; max-height: 400px; border-radius: 10px; margin: 15px 0;" alt="Post image">`
-        } else if (post.content_type === 'video') {
-            mediaHTML = `<video controls style="max-width: 100%; max-height: 400px; border-radius: 10px; margin: 15px 0;"><source src="${post.file_url}"></video>`
-        }
-    }
+    console.log('[ADMIN] posts:', posts, 'error:', error)
 
-    const date = new Date(post.created_at).toLocaleString()
-
-    div.innerHTML = `
-        <div class="admin-post-header">
-            <div class="post-info">
-                <strong>${post.user_name}</strong> from <span style="color: #667eea;">${post.district}</span><br>
-                <small style="color: #999;">📅 ${date}</small>
-            </div>
-        </div>
-        
-        <div class="post-content" style="margin: 20px 0; font-size: 1.1em; line-height: 1.6;">
-            ${post.text_content}
-        </div>
-        
-        ${mediaHTML}
-        
-        <div class="admin-actions">
-            <button class="btn-approve" data-id="${post.id}">✅ Approve & Publish</button>
-            <button class="btn-reject" data-id="${post.id}">❌ Reject</button>
-        </div>
-    `
-
-    // Add event listeners
-    const approveBtn = div.querySelector('.btn-approve')
-    const rejectBtn = div.querySelector('.btn-reject')
-
-    approveBtn.addEventListener('click', () => approvePost(post.id))
-    rejectBtn.addEventListener('click', () => rejectPost(post.id))
-
-    return div
-}
-
-// ========================================
-// APPROVE POST
-// ========================================
-
-async function approvePost(postId) {
-    console.log('✅ Approving post:', postId)
-
-    if (!confirm('✅ Approve this post and make it public?')) {
+    if (error) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="color:var(--danger);text-align:center;padding:1rem">
+            ❌ Error loading posts: ${error.message}
+        </td></tr>`
         return
     }
 
-    try {
-        const { error } = await supabase
-            .from('posts')
-            .update({
-                status: 'approved',
-                approved_at: new Date().toISOString(),
-                approved_by: currentUser.id
-            })
-            .eq('id', postId)
+    const allPosts = Array.isArray(posts) ? posts : []
 
-        if (error) {
-            console.error('❌ Error approving post:', error)
-            throw error
-        }
-
-        console.log('✅ Post approved successfully!')
-        alert('✅ Post approved and published!')
-
-        // Reload lists
-        loadPendingPosts()
-        loadStats()
-
-    } catch (error) {
-        console.error('❌ Approval failed:', error)
-        alert('❌ Failed to approve post: ' + error.message)
-    }
-}
-
-// ========================================
-// REJECT POST
-// ========================================
-
-async function rejectPost(postId) {
-    console.log('❌ Rejecting post:', postId)
-
-    const reason = prompt('Enter rejection reason (optional):')
-
-    if (reason === null) {
-        // User clicked cancel
+    if (allPosts.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem">
+            No posts in the database yet. Create a post from the Dashboard first.
+        </td></tr>`
         return
     }
 
-    try {
-        const { error } = await supabase
-            .from('posts')
-            .update({
-                status: 'rejected',
-                rejection_reason: reason || 'Content policy violation',
-                rejected_at: new Date().toISOString(),
-                rejected_by: currentUser.id
-            })
-            .eq('id', postId)
+    const filtered = allPosts.filter(p => p.status === currentStatus)
 
-        if (error) {
-            console.error('❌ Error rejecting post:', error)
-            throw error
+    if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem">
+            No <strong>${currentStatus}</strong> posts found.
+        </td></tr>`
+        return
+    }
+
+    tableBody.innerHTML = filtered.map(post => {
+        const preview = post.content.length > 80 ? post.content.substring(0, 80) + '...' : post.content
+        const date = new Date(post.created_at).toLocaleDateString()
+        const author = post.profiles?.name || 'Unknown'
+
+        let actions = ''
+        if (currentStatus === 'pending') {
+            actions = `
+                <button class="btn btn-success" style="padding:0.25rem 0.75rem;font-size:0.8rem;"
+                    onclick="changePostStatus('${post.id}', 'approved')">Approve</button>
+                <button class="btn btn-danger" style="padding:0.25rem 0.75rem;font-size:0.8rem;margin-top:0.25rem;"
+                    onclick="changePostStatus('${post.id}', 'rejected')">Reject</button>`
+        } else if (currentStatus === 'rejected') {
+            actions = `
+                <button class="btn btn-success" style="padding:0.25rem 0.75rem;font-size:0.8rem;"
+                    onclick="changePostStatus('${post.id}', 'approved')">Approve</button>`
         }
 
-        console.log('✅ Post rejected')
-        alert('Post rejected.')
-
-        // Reload lists
-        loadPendingPosts()
-        loadStats()
-
-    } catch (error) {
-        console.error('❌ Rejection failed:', error)
-        alert('❌ Failed to reject post: ' + error.message)
-    }
+        return `
+        <tr>
+            <td>
+                <div class="flex items-center gap-2">
+                    <div class="avatar" style="width:32px;height:32px;">
+                        ${post.profiles?.avatar_url
+                            ? `<img src="${post.profiles.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+                            : `<div style="width:100%;height:100%;background:var(--primary);border-radius:50%;"></div>`}
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm">${author}</div>
+                        <div class="text-xs" style="color:var(--text-muted)">${post.profiles?.district || ''}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                title="${post.content.replace(/"/g, '&quot;')}">
+                ${post.image_url ? '🖼️ ' : ''}${preview}
+            </td>
+            <td style="color:var(--text-secondary)">${date}</td>
+            <td><div class="flex flex-col gap-1 items-start">${actions}</div></td>
+        </tr>`
+    }).join('')
 }
-
-// ========================================
-// LOAD STATS
-// ========================================
-
-async function loadStats() {
-    console.log('📊 Loading stats...')
-
-    try {
-        // Count pending posts
-        const { count: pendingCount, error: pendingError } = await supabase
-            .from('posts')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'pending')
-
-        if (pendingError) throw pendingError
-
-        const pendingEl = document.getElementById('pending-count')
-        if (pendingEl) pendingEl.textContent = pendingCount || 0
-
-        console.log('📊 Pending posts:', pendingCount)
-
-        // Count approved today
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-
-        const { count: approvedCount, error: approvedError } = await supabase
-            .from('posts')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'approved')
-            .gte('approved_at', today.toISOString())
-
-        if (approvedError) throw approvedError
-
-        const approvedEl = document.getElementById('approved-count')
-        if (approvedEl) approvedEl.textContent = approvedCount || 0
-
-        console.log('📊 Approved today:', approvedCount)
-
-        // Count rejected today
-        const { count: rejectedCount, error: rejectedError } = await supabase
-            .from('posts')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'rejected')
-            .gte('rejected_at', today.toISOString())
-
-        if (rejectedError) throw rejectedError
-
-        const rejectedEl = document.getElementById('rejected-count')
-        if (rejectedEl) rejectedEl.textContent = rejectedCount || 0
-
-        console.log('📊 Rejected today:', rejectedCount)
-
-    } catch (error) {
-        console.error('❌ Error loading stats:', error)
-    }
-}
-
-console.log('✅ Admin.js ready')

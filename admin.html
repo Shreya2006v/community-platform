@@ -3,48 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Connecty | Admin Panel</title>
+    <link rel="stylesheet" href="css/design-system.css">
+    <style>
+        .admin-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        
+        .admin-table th {
+            padding: 1rem;
+            border-bottom: 2px solid var(--border-light);
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        
+        .admin-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: middle;
+        }
+        
+        .admin-table tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">🛡️ Admin Panel</div>
-        <div class="nav-user">
-            <a href="index.html" style="color: white; text-decoration: none; margin-right: 20px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; font-weight: 600;">
-                🏠 View Homepage
+    <div class="ambient-bg"></div>
+
+    <nav class="navbar container flex justify-between items-center" style="background: rgba(5,5,5,0.8); backdrop-filter: blur(12px);">
+        <div class="flex items-center gap-4">
+            <a href="dashboard.html" class="brand-text text-gradient-primary">Connecty</a>
+            <span class="badge" style="background: rgba(236, 72, 153, 0.2); color: var(--accent); border: 1px solid var(--accent);">Admin Mode</span>
+        </div>
+        <div class="nav-user flex items-center gap-4">
+            <div class="flex items-center gap-2">
+                <div class="avatar" id="nav-avatar"></div>
+                <span id="nav-username" class="font-bold text-sm hidden md:block"></span>
+            </div>
+            <a href="dashboard.html" class="btn btn-secondary" style="padding: 0.5rem 1rem; border-color: var(--primary); color: var(--primary);">
+                Dashboard
             </a>
-            <span id="admin-name">Admin</span>
-            <button id="logout-btn" class="btn-logout">Logout</button>
-            <div class="nav-user">
-    
-    <button id="switch-account-btn" class="btn-logout" style="background: rgba(255,255,255,0.15); margin-right: 10px;">Switch Account</button>
-    
-</div>
+            <button id="logout-btn" class="btn btn-secondary" style="padding: 0.5rem 1rem;">
+                Logout
+            </button>
         </div>
     </nav>
     
-    <div class="container">
-        <div class="stats-cards">
-            <div class="stat-card">
-                <h3>Pending Review</h3>
-                <p class="stat-number" id="pending-count">0</p>
+    <main class="container mt-8 mb-8" style="flex: 1;">
+        <div class="admin-layout">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold">Content Moderation</h1>
+                <div class="flex gap-2">
+                    <button class="btn btn-secondary filter-admin active" data-status="pending">Pending</button>
+                    <button class="btn btn-secondary filter-admin" data-status="rejected">Rejected</button>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3>Approved Today</h3>
-                <p class="stat-number" id="approved-count">0</p>
-            </div>
-            <div class="stat-card">
-                <h3>Rejected Today</h3>
-                <p class="stat-number" id="rejected-count">0</p>
+            
+            <div class="glass glass-card p-0" style="overflow-x: auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Author</th>
+                            <th style="width: 45%;">Content Preview</th>
+                            <th style="width: 15%;">Date</th>
+                            <th style="width: 15%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body">
+                        <tr>
+                            <td colspan="4" class="text-center py-8"><span class="spinner"></span></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <h1>Pending Posts</h1>
-        <div id="pending-posts">
-            <div class="loading"></div>
-        </div>
-    </div>
-    
+    </main>
+
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>
